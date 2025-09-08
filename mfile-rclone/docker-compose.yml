@@ -1,0 +1,65 @@
+# ----------------------------------------------------------------
+# ### 重要前置步骤 (IMPORTANT PREREQUISITES) ###
+#
+# 在运行此 docker-compose 文件之前, 你必须在你的宿主机 (Host Machine) 上安装 fuse3。
+# 这是因为 rclone mount 功能需要 FUSE (Filesystem in Userspace) 来将 WebDAV 挂载为本地目录。
+#
+# 如果不安装, `rclone-mount` 服务将会启动失败!
+#
+# 请根据你的操作系统, 在宿主机上执行以下命令之一:
+#
+#  - 针对 Debian / Ubuntu 系统:
+#    sudo apt-get update && sudo apt-get install -y fuse3
+#
+#  - 针对 CentOS / RHEL / Fedora 系统:
+#    sudo yum install -y fuse3   或   sudo dnf install -y fuse3
+#
+# ----------------------------------------------------------------
+
+version: '3.8'
+
+services:
+  # Mfile 服务
+  mfile:
+    image: ppllpig/mfile
+    container_name: mfile
+    restart: unless-stopped
+    ports:
+      - "4719:4719"
+    volumes:
+      - mfile_data:/app/data
+
+  # Rclone 挂载服务
+  rclone-mount:
+    image: rclone/rclone:latest
+    container_name: mfile_webdav_mount
+    restart: unless-stopped
+    
+    depends_on:
+      - mfile
+      
+    environment:
+      - RCLONE_CONFIG_MFILE_TYPE=webdav
+      - RCLONE_CONFIG_MFILE_URL=http://mfile:4719/api/webdav
+      
+    # 关键修改：在命令末尾添加了 --allow-non-empty 参数
+    # 这可以防止因目标目录非空而导致的挂载失败
+    command: mount mfile:/ /mnt/media --allow-other --vfs-cache-mode writes --allow-non-empty
+    
+    volumes:
+      # 宿主机目录 : 容器内目录
+      - /root/mfile:/mnt/media:shared
+      - ./rclone_config:/config/rclone
+      - ./rclone_cache:/root/.cache/rclone
+
+    # 挂载所需的系统权限
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+
+volumes:
+  mfile_data: {}
+
