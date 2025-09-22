@@ -1,0 +1,20 @@
+services:
+  mixfile-cli:
+    image: ppllpig/mfile
+    container_name: mfile
+    ports:
+      - "4719:4719"
+    volumes:
+      # 将容器的 /app/data 目录映射到主机的 /root/docker/mfile 目录
+      # 这样，所有在容器内 /app/data 中生成的数据，都会被保存在主机的 /root/docker/mfile 文件夹里
+      - /root/docker/mfile:/app/data
+    restart: always
+
+    # --- ↓↓↓ 新增的资源限制配置 ↓↓↓ ---
+    deploy:
+      resources:
+        limits:
+          # CPU 限制: 最多使用 0.75 个 CPU 核心 (相当于 75% 的单核)
+          cpus: '0.75'
+          # 内存限制: 最多使用 1GB 内存
+          memory: 1G
