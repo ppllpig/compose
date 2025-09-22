@@ -1,0 +1,27 @@
+services:
+  saveany-bot:
+    image: ghcr.io/krau/saveany-bot:latest
+    container_name: saveany-bot
+    restart: unless-stopped
+    volumes:
+      - /root/docker/saveanybot/data:/app/data
+      - /root/docker/saveanybot/config.toml:/app/config.toml
+      - /root/docker/saveanybot/downloads:/app/downloads
+      - /root/docker/saveanybot/cache:/app/cache
+    # 使用 host 模式以便访问宿主机服务 (如代理)
+    # 如果你对 Docker 网络模式熟悉, 可以自行修改
+    network_mode: host
+
+    # --- ↓↓↓ 新增的资源限制配置 ↓↓↓ ---
+    deploy:
+      resources:
+        limits:
+          # CPU 限制: 最多使用 0.5 个 CPU 核心 (相当于 50% 的单核)
+          cpus: '0.50'
+          # 内存限制: 最多使用 512MB 内存
+          memory: 512M
+        # reservations:
+          # (可选) 资源预留, 这是软限制, 保证容器至少能获得这么多资源
+          # cpus: '0.25'
+          # memory: 128M
+
